@@ -1,6 +1,6 @@
-# Vortex Analytics - Rust SDK
+# Hintway - Rust SDK
 
-For documentation, visit [documentation.vortexanalytics.io](https://documentation.vortexanalytics.io/).
+For documentation, visit [documentation.hintway.app](https://documentation.hintway.app/).
 
 ## License
 

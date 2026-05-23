@@ -74,7 +74,7 @@ impl AnalyticsManager {
         INSTANCE.get_or_init(|| AnalyticsManager {
             state: Arc::new(Mutex::new(State {
                 tenant_id: String::new(),
-                url: "https://in.vortexanalytics.io".to_string(),
+                url: "https://in.hintway.app".to_string(),
                 platform: String::new(),
                 app_version: "1.0.0".to_string(),
                 auto_batching: false,
@@ -104,10 +104,10 @@ impl AnalyticsManager {
         }
     }
 
-    fn vortex_log(&self, msg: &str) {
+    fn hintway_log(&self, msg: &str) {
         let verbose = self.state.lock().map(|s| s.verbose).unwrap_or(false);
         if verbose {
-            println!("[Vortex] {}", msg);
+            println!("[Hintway] {}", msg);
         }
     }
 
@@ -142,14 +142,14 @@ impl AnalyticsManager {
 
             if state.verbose {
                 println!(
-                    "[Vortex] Init called: tenantId={}, url={}, platform={}, appVersion={}, autoBatching={}, flushIntervalSec={}",
+                    "[Hintway] Init called: tenantId={}, url={}, platform={}, appVersion={}, autoBatching={}, flushIntervalSec={}",
                     tenant_id, url, platform, app_version, auto_batching, flush_interval_sec
                 );
             }
         }
 
         if initialize_needed {
-            self.vortex_log("AnalyticsManager initialized");
+            self.hintway_log("AnalyticsManager initialized");
 
             // Spawn background thread to check server availability
             let state_clone = Arc::clone(&self.state);
@@ -167,7 +167,7 @@ impl AnalyticsManager {
         if path.exists() {
             if let Ok(id) = fs::read_to_string(&path) {
                 if *verbose {
-                    println!("[Vortex] Loaded persistent identity: {}", id);
+                    println!("[Hintway] Loaded persistent identity: {}", id);
                 }
                 return id;
             }
@@ -175,7 +175,7 @@ impl AnalyticsManager {
         let new_id = Uuid::new_v4().to_string();
         let _ = fs::write(path, &new_id);
         if *verbose {
-            println!("[Vortex] Generated new persistent identity: {}", new_id);
+            println!("[Hintway] Generated new persistent identity: {}", new_id);
         }
         new_id
     }
@@ -216,7 +216,7 @@ impl AnalyticsManager {
         let validate_url = format!("{}/validate?tenant_id={}", url, tenant_id);
         let verbose = state.lock().unwrap().verbose;
         if verbose {
-            println!("[Vortex] Validating tenant at {}", validate_url);
+            println!("[Hintway] Validating tenant at {}", validate_url);
         }
 
         let mut server_alive = false;
@@ -224,17 +224,17 @@ impl AnalyticsManager {
             Ok(response) if response.status().is_success() => {
                 server_alive = true;
                 if verbose {
-                    println!("[Vortex] Tenant validation succeeded");
+                    println!("[Hintway] Tenant validation succeeded");
                 }
             }
             Ok(response) => {
                 if verbose {
-                    println!("[Vortex] Tenant validation failed - HTTP {}", response.status());
+                    println!("[Hintway] Tenant validation failed - HTTP {}", response.status());
                 }
             }
             Err(e) => {
                 if verbose {
-                    println!("[Vortex] Tenant validation request failed: {}", e);
+                    println!("[Hintway] Tenant validation request failed: {}", e);
                 }
             }
         }
@@ -260,19 +260,19 @@ impl AnalyticsManager {
             format!("{}{}", s.url, endpoint)
         };
 
-        self.vortex_log(&format!("Sending POST to {}", url));
+        self.hintway_log(&format!("Sending POST to {}", url));
 
         match self.client.post(&url).json(data).send() {
             Ok(res) if res.status().is_success() => {
-                self.vortex_log(&format!("Request succeeded: {}", url));
+                self.hintway_log(&format!("Request succeeded: {}", url));
                 true
             }
             Ok(res) => {
-                self.vortex_log(&format!("Request failed: {} | Status: {}", url, res.status()));
+                self.hintway_log(&format!("Request failed: {} | Status: {}", url, res.status()));
                 false
             }
             Err(e) => {
-                self.vortex_log(&format!("Request exception: {}", e));
+                self.hintway_log(&format!("Request exception: {}", e));
                 false
             }
         }
@@ -314,7 +314,7 @@ impl AnalyticsManager {
         };
 
         let batch = BatchedTracks { tracks: to_send };
-        self.vortex_log(&format!("Flushing internal queue with {} events", batch.tracks.len()));
+        self.hintway_log(&format!("Flushing internal queue with {} events", batch.tracks.len()));
 
         if let Ok(json_val) = serde_json::to_value(&batch) {
             self.send_request("/batch", &json_val);
@@ -332,7 +332,7 @@ impl AnalyticsManager {
             };
 
             let batch = BatchedTracks { tracks: to_send };
-            AnalyticsManager::instance().vortex_log(&format!(
+            AnalyticsManager::instance().hintway_log(&format!(
                 "Posting manual batch with {} events",
                 batch.tracks.len()
             ));
@@ -384,7 +384,7 @@ impl AnalyticsManager {
 
     fn process_track_event(&self, event_name: &str, value: String) {
         if let Some(t) = self.create_tracking(event_name.to_string(), value.clone()) {
-            self.vortex_log(&format!("TrackEvent: {} value: {}", event_name, value));
+            self.hintway_log(&format!("TrackEvent: {} value: {}", event_name, value));
 
             let (is_checked, auto_batching) = {
                 let s = self.state.lock().unwrap();
@@ -399,7 +399,7 @@ impl AnalyticsManager {
                     s.internal_queue.len()
                 };
                 
-                self.vortex_log(&format!(
+                self.hintway_log(&format!(
                     "Event queued internally. Queue size: {}",
                     queue_len
                 ));
@@ -425,7 +425,7 @@ impl AnalyticsManager {
                 s.manual_batched_tracks.len()
             };
             
-            self.vortex_log(&format!(
+            self.hintway_log(&format!(
                 "BatchedTrackEvent: {} (dict) added. Batch size: {}",
                 event_name,
                 batch_len
@@ -444,7 +444,7 @@ impl AnalyticsManager {
                 s.manual_batched_tracks.len()
             };
             
-            self.vortex_log(&format!(
+            self.hintway_log(&format!(
                 "BatchedTrackEvent: {} (string) added. Batch size: {}",
                 event_name,
                 batch_len
@@ -471,7 +471,7 @@ impl AnalyticsManager {
         };
 
         if !to_send.is_empty() {
-            self.vortex_log(&format!(
+            self.hintway_log(&format!(
                 "Attempting final flush before exit with {} events",
                 to_send.len()
             ));
