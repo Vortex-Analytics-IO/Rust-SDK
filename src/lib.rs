@@ -119,6 +119,7 @@ impl AnalyticsManager {
         app_version: &str,
         auto_batching: bool,
         flush_interval_sec: u64,
+        identity: Option<&str>,
     ) {
         let mut initialize_needed = false;
         {
@@ -135,7 +136,10 @@ impl AnalyticsManager {
             state.auto_flush_interval_ms = flush_interval_sec * 1000;
             state.initialized = true;
 
-            state.identity = Self::get_persistent_identity(&state.verbose);
+            state.identity = match identity {
+                Some(id) => id.to_string(),
+                None => Self::get_persistent_identity(&state.verbose),
+            };
             state.session_id = Uuid::new_v4().to_string();
 
             initialize_needed = true;
