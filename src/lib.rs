@@ -460,10 +460,12 @@ impl AnalyticsManager {
         // Signal background threads to stop
         self.is_shutting_down.store(true, Ordering::SeqCst);
 
+        let exit_track = self.create_tracking("app_exit".to_string(), "".to_string());
+
         let to_send = {
             let mut s = self.state.lock().unwrap();
-            if let Some(exit_track) = self.create_tracking("app_exit".to_string(), "".to_string()) {
-                s.manual_batched_tracks.push(exit_track);
+            if let Some(t) = exit_track {
+                s.manual_batched_tracks.push(t);
             }
 
             if !s.internal_queue.is_empty() {
